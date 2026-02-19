@@ -40,23 +40,47 @@ detect_platform() {
     PLATFORM="${ARCH}-${OS}"
 }
 
+# --- install dir ---
+
+pick_install_dir() {
+    NEED_SUDO=0
+    if [ -w /usr/local/bin ]; then
+        INSTALL_DIR="/usr/local/bin"
+    elif command -v sudo >/dev/null 2>&1; then
+        INSTALL_DIR="/usr/local/bin"
+        NEED_SUDO=1
+    else
+        INSTALL_DIR="${HOME}/.local/bin"
+        mkdir -p "$INSTALL_DIR"
+    fi
+}
+
 # --- fetch latest release ---
 
 fetch_latest_tag() {
     need curl
-    need tar
 
-    TAG="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+    # Note: `/releases/latest` returns 404 if there are no releases.
+    JSON="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null || true)"
+    if [ -z "$JSON" ]; then
+        TAG=""
+        return 0
+    fi
+
+    TAG="$(printf '%s' "$JSON" \
         | grep '"tag_name"' \
         | head -1 \
         | sed 's/.*"tag_name": *"//;s/".*//')"
 
-    [ -n "$TAG" ] || err "Could not determine latest release. Check https://github.com/${REPO}/releases"
+    [ -n "$TAG" ] || TAG=""
 }
 
 # --- download and install ---
 
-install() {
+install_release() {
+    need tar
+    pick_install_dir
+
     ASSET="${BINARY}-${TAG}-${PLATFORM}.tar.gz"
     URL="https://github.com/${REPO}/releases/download/${TAG}/${ASSET}"
 
@@ -75,24 +99,47 @@ install() {
     [ -n "$BIN" ] || err "Binary not found in archive. Release asset may have an unexpected layout."
     chmod +x "$BIN"
 
-    # Install to /usr/local/bin or fall back to ~/.local/bin
-    if [ -w /usr/local/bin ]; then
-        INSTALL_DIR="/usr/local/bin"
-    elif command -v sudo >/dev/null 2>&1; then
+    if [ "$NEED_SUDO" -eq 1 ]; then
         info "Installing to /usr/local/bin (requires sudo)..."
-        INSTALL_DIR="/usr/local/bin"
         sudo mv "$BIN" "${INSTALL_DIR}/${BINARY}"
-        info "Installed ${BINARY} to ${INSTALL_DIR}/${BINARY}"
-        return
     else
-        INSTALL_DIR="${HOME}/.local/bin"
-        mkdir -p "$INSTALL_DIR"
+        mv "$BIN" "${INSTALL_DIR}/${BINARY}"
     fi
 
-    mv "$BIN" "${INSTALL_DIR}/${BINARY}"
     info "Installed ${BINARY} to ${INSTALL_DIR}/${BINARY}"
 
     # Check if install dir is in PATH
+    case ":$PATH:" in
+        *":${INSTALL_DIR}:"*) ;;
+        *) info "Add ${INSTALL_DIR} to your PATH to use '${BINARY}' directly." ;;
+    esac
+}
+
+install_from_source() {
+    need go
+    pick_install_dir
+
+    PKG="github.com/${REPO}/cmd/${BINARY}@main"
+
+    TMPDIR="$(mktemp -d)"
+    trap 'rm -rf "$TMPDIR"' EXIT
+
+    info "Building from source (${PKG})..."
+    GOBIN="$TMPDIR" go install "$PKG" || err "Go build failed. Try installing Go or use a tagged version."
+
+    BIN="${TMPDIR}/${BINARY}"
+    [ -f "$BIN" ] || err "Built binary not found at ${BIN}."
+    chmod +x "$BIN"
+
+    if [ "$NEED_SUDO" -eq 1 ]; then
+        info "Installing to /usr/local/bin (requires sudo)..."
+        sudo mv "$BIN" "${INSTALL_DIR}/${BINARY}"
+    else
+        mv "$BIN" "${INSTALL_DIR}/${BINARY}"
+    fi
+
+    info "Installed ${BINARY} to ${INSTALL_DIR}/${BINARY}"
+
     case ":$PATH:" in
         *":${INSTALL_DIR}:"*) ;;
         *) info "Add ${INSTALL_DIR} to your PATH to use '${BINARY}' directly." ;;
@@ -105,7 +152,12 @@ main() {
     info "llmpole installer"
     detect_platform
     fetch_latest_tag
-    install
+    if [ -n "$TAG" ]; then
+        install_release
+    else
+        info "No GitHub releases found; installing from source (Go required)..."
+        install_from_source
+    fi
     info "Done. Run '${BINARY}' to get started."
 }
 
