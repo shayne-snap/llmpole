@@ -6,8 +6,6 @@ Terminal demos are recorded with [VHS](https://github.com/charmbracelet/vhs). Ea
 
 - [VHS](https://github.com/charmbracelet/vhs) (e.g. `brew install vhs`)
 - [ttyd](https://github.com/tsl0922/ttyd) (e.g. `brew install ttyd`)
-- `llmpole` in your PATH (from repo root: `go build -o llmpole ./cmd/llmpole` then `export PATH=$PWD:$PATH`)
-
 ## Record
 
 From the **repository root**:
