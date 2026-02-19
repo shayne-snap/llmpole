@@ -1,11 +1,21 @@
 # llmpole
 
-[中文说明](README.zh-CN.md)
+[中文](README.zh-CN.md)
 
 [![CI](https://github.com/shayne-snap/llmpole/actions/workflows/ci.yml/badge.svg)](https://github.com/shayne-snap/llmpole/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **LLM Pole** — find your pole-position models. A terminal tool that right-sizes LLM models to your system's RAM, CPU, and GPU. It detects your hardware, scores each model on quality, speed, fit, and context, and tells you which ones will actually run well on your machine. Ships with an interactive TUI (default) and a classic CLI mode. Supports multi-GPU setups, MoE architectures, dynamic quantization selection, and speed estimation.
+
+## Demo
+
+**TUI** (default — interactive browser):
+
+![TUI Demo](demo/tui.gif)
+
+**CLI** (table output with `--cli` and subcommands):
+
+![CLI Demo](demo/cli.gif)
 
 ## Installation
 
@@ -54,16 +64,6 @@ llmpole pole -n 5          # Top 5 fits
 llmpole search llama       # Search by name
 llmpole recommend -n 3     # Top 3 recommendations
 ```
-
-### Demo
-
-**TUI** (default — interactive browser):
-
-![TUI Demo](demo/tui.gif)
-
-**CLI** (table output with `--cli` and subcommands):
-
-![CLI Demo](demo/cli.gif)
 
 ## Requirements
 
