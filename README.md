@@ -55,6 +55,16 @@ llmpole search llama       # Search by name
 llmpole recommend -n 3     # Top 3 recommendations
 ```
 
+### Demo
+
+**TUI** (default — interactive browser):
+
+![TUI Demo](demo/tui.gif)
+
+**CLI** (table output with `--cli` and subcommands):
+
+![CLI Demo](demo/cli.gif)
+
 ## Requirements
 
 - **Go**: 1.24+ for building from source.
